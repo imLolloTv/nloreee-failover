@@ -1,0 +1,13 @@
+# Copiare in .dev.vars (gitignored) e adattare ai propri valori.
+# In produzione le stesse variabili vanno impostate dal pannello Cloudflare:
+# Worker > Settings > Variables and Secrets.
+
+# Hostname reale della VPS/Pangolin contattato dal Worker.
+# NON puo essere nloreee.it, altrimenti il Worker richiama se stesso.
+ORIGIN_HOSTNAME="origin.nloreee.it"
+
+# Header Host da inviare a Traefik. Se vuoto viene usato ORIGIN_HOSTNAME.
+ORIGIN_HOST_HEADER="nloreee.it"
+
+# Timeout in ms prima di considerare l'origin irraggiungibile.
+ORIGIN_TIMEOUT_MS="5000"

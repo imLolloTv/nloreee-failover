@@ -1,0 +1,65 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #F9F9FB;
+  --foreground: #000000;
+
+  --loading-bg: #F9F9FB;
+  --loading-text: #8E8E93;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #121212;
+  --foreground: #ededed;
+
+  --loading-bg: #121212;
+  --loading-text: #8E8E93;
+
+  --color-black: #f4f4f5;
+  --color-white: #252525;
+
+  --color-gray-50: #18181b;
+  --color-gray-100: #1f1f23;
+  --color-gray-200: #2D2D30;
+  --color-gray-300: #3f3f46;
+  --color-gray-400: #52525b;
+  --color-gray-500: #a1a1aa;
+  --color-gray-600: #d4d4d8;
+  --color-gray-700: #e4e4e7;
+  --color-gray-800: #f4f4f5;
+  --color-gray-900: #fafafa;
+
+  --color-red-600: #f87171;
+  --color-green-600: #4ade80;
+  --color-yellow-500: #facc15;
+}
+
+.dark .border-black {
+  border-color: var(--color-white)!important;
+}
+
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Helvetica, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}

@@ -1,0 +1,14 @@
+# wrangler.toml
+name = 'nloreee-failover'
+main = "worker.js"
+compatibility_date = "2026-09-27"
+keep_vars = true
+
+[assets]
+# Output statico del progetto Next.js in fallback-app/ (next build con output: "export")
+directory = "./fallback-app/out"
+binding = "ASSETS"
+# Fondamentale: ogni richiesta deve passare prima dal Worker (per la logica di
+# proxy/failover). Senza questo, Cloudflare servirebbe gli asset direttamente
+# per i path che coincidono, bypassando il Worker.
+run_worker_first = true

@@ -140,7 +140,7 @@ Le variabili si possono dichiarare anche nel pannello Builds. `keep_vars = true`
   e `/failover/` (file in `fallback-app/public/failover/`) sono serviti sempre da
   `ASSETS`. Se fossero prossati, con la VPS giù ogni richiesta andrebbe in timeout
   e verrebbe sostituita dalla pagina offline invece che dal file reale: si
-  romperebbe l'hydration (il pulsante "Riprova" smetterebbe di rispondere) e le
+  romperebbe l'hydration (il pulsante "Retry" smetterebbe di rispondere) e le
   immagini.
 - **`redirect: "follow"`** lascia risolvere i redirect dell'origin al Worker
   invece di rilanciarli al browser. Un redirect legittimo si risolve in modo
@@ -150,3 +150,10 @@ Le variabili si possono dichiarare anche nel pannello Builds. `keep_vars = true`
   `ERR_TOO_MANY_REDIRECTS`.
 - **La pagina offline non viene mai cachata** (`Cache-Control: no-store`),
   altrimenti continuerebbe a essere mostrata anche dopo il ritorno online della VPS.
+- **Il reload automatico usa il `503` come segnale** (`useAutoReload`): la pagina
+  riprova `window.location.href` ogni 5s, con backoff a 30s, e ricarica quando la
+  risposta non è più un `503`. Il `503` è un contratto affidabile perché il Worker
+  lo restituisce **solo** per la pagina di fallback: qualunque `503` dell'origin
+  verrebbe comunque convertito in fallback. Ogni probe è una richiesta in più verso
+  l'origin (con la VPS giù costa un `ORIGIN_TIMEOUT_MS` ciascuna), quindi i probe
+  vengono saltati con la tab in background e ripresi subito quando torna visibile.

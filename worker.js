@@ -62,7 +62,7 @@ const FAILOVER_STATUS_CODES = new Set([502, 503, 504, 521, 522, 523, 524, 525, 5
 //   diventa raggiungibile su /failover/logo.svg e va referenziato così nel JSX)
 // Se questi path venissero proxati verso l'origin, quando la VPS è giù ogni
 // richiesta andrebbe in timeout e verrebbe sostituita dalla pagina di fallback
-// stessa invece che dal file reale, rompendo l'hydration (il pulsante "Riprova"
+// stessa invece che dal file reale, rompendo l'hydration (il pulsante "Retry"
 // smetterebbe di rispondere) e le immagini pubbliche.
 const FALLBACK_ASSET_PREFIXES = ["/_next/", "/failover/"];
 

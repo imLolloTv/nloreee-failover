@@ -105,9 +105,11 @@ Per lavorare solo sulla pagina offline, con hot reload:
 npm run fallback:dev        # http://localhost:3000/fallback
 ```
 
-> `fallback-app` usa **bun** come package manager (`packageManager` in
-> `package.json`, `bun.lock` versionato). I script npm del root funzionano comunque
-> perché `npm run` delega solo al build di Next.js.
+> `fallback-app` si sviluppa con **bun** (`packageManager` in `package.json`,
+> `bun.lock` versionato), ma gli script del root usano `npm`: sono quelli che gira
+> Workers Builds, dove il `packageManager` del progetto non viene onorato. Per questo
+> `fallback-app/package-lock.json` è in `.gitignore` e la sorgente di verità resta
+> `bun.lock`.
 
 ## Deploy
 
@@ -119,9 +121,13 @@ In alternativa, con **Cloudflare Workers Builds** (build automatico a ogni push)
 
 | Campo | Valore |
 | --- | --- |
-| Build command | `npm run fallback:install && npm run fallback:build` |
+| Build command | `npm run fallback:build` |
 | Deploy command | `npx wrangler deploy` |
 | Root directory | `/` |
+
+`fallback:build` installa da sé le dipendenze di `fallback-app` prima di compilare:
+`npm install` al root da solo **non** basta, perché `fallback-app` non è un workspace
+e senza le sue dipendenze `next build` fallisce con `sh: 1: next: not found`.
 
 Le variabili si possono dichiarare anche nel pannello Builds. `keep_vars = true` in
 [`wrangler.toml`](wrangler.toml) serve a non farle cancellare dai deploy.

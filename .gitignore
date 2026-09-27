@@ -10,6 +10,9 @@ yarn-error.log*
 fallback-app/.next/
 fallback-app/out/
 fallback-app/next-env.d.ts
+# npm install (usato dagli script del root e da Workers Builds) su un progetto
+# gestito con bun -> la lockfile di npm è un artefatto, vale bun.lock
+fallback-app/package-lock.json
 # tsconfig con "incremental": true -> cache di compilazione TypeScript
 *.tsbuildinfo
 

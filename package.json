@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "fallback:install": "npm --prefix fallback-app install",
-    "fallback:build": "npm --prefix fallback-app run build",
+    "fallback:build": "npm run fallback:install && npm --prefix fallback-app run build",
     "fallback:dev": "npm --prefix fallback-app run dev",
     "dev": "npm run fallback:build && wrangler dev",
     "deploy": "npm run fallback:build && wrangler deploy"

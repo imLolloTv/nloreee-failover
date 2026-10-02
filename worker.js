@@ -54,24 +54,56 @@ const DEFAULT_TIMEOUT_MS = 5000;
 // client così come sono invece di mostrare il nostro fallback.
 const FAILOVER_STATUS_CODES = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
 
-// Path che vanno SEMPRE serviti da ASSETS, mai proxati verso l'origin:
-// - /_next/  -> chunk JS/CSS generati da Next.js (path fisico reale della build,
-//   convenzione interna di Next, di fatto mai in collisione con route di un sito vero)
-// - /failover/ -> convenzione per i file che metti in fallback-app/public/failover/
-//   (es. un logo per la pagina di errore: fallback-app/public/failover/logo.svg
-//   diventa raggiungibile su /failover/logo.svg e va referenziato così nel JSX)
-// Se questi path venissero proxati verso l'origin, quando la VPS è giù ogni
-// richiesta andrebbe in timeout e verrebbe sostituita dalla pagina di fallback
-// stessa invece che dal file reale, rompendo l'hydration (il pulsante "Retry"
-// smetterebbe di rispondere) e le immagini pubbliche.
+// Path che possono esistere SIA nella build di fallback (ASSETS) SIA sull'origin:
+// - /_next/  -> chunk JS/CSS generati da Next.js. Sia il sito vero (sulla VPS)
+//   che la pagina di fallback (build in fallback-app/out) usano questo prefisso,
+//   ma con hash diversi per ogni build (es. turbopack-xxxx.js). NON si può
+//   servire ciecamente da ASSETS: quando l'origin è SU, l'HTML viene da lì e
+//   referenzia gli hash della build VPS — servirli da ASSETS dà 404 a raffica,
+//   la pagina resta bloccata su "LOADING ..." senza stili e senza hydration.
+// - /failover/ -> file in fallback-app/public/failover/ (logo, suoni, favicon
+//   della pagina offline). In genere esistono solo in ASSETS.
+// Strategia: prova prima ASSETS; se 404, passa al proxy verso l'origin.
+// Se anche l'origin fallisce, per questi path restituisci il 404 di ASSETS
+// (non fallback.html, che come .js/.css darebbe solo errori MIME in console).
 const FALLBACK_ASSET_PREFIXES = ["/_next/", "/failover/"];
 
 export default {
   async fetch(request, env, ctx) {
     const incomingUrlForAssets = new URL(request.url);
-    if (FALLBACK_ASSET_PREFIXES.some((p) => incomingUrlForAssets.pathname.startsWith(p))) {
-      return env.ASSETS.fetch(request);
+    const isAssetPath = FALLBACK_ASSET_PREFIXES.some((p) =>
+      incomingUrlForAssets.pathname.startsWith(p)
+    );
+    if (isAssetPath) {
+      const assetResponse = await env.ASSETS.fetch(request);
+      // Trovato nella build di fallback (caso origin GIÙ: la pagina offline
+      // carica i SUOI chunk) -> servilo subito, senza toccare l'origin.
+      if (assetResponse.status !== 404) {
+        return assetResponse;
+      }
+      // Non è un file della build di fallback: quasi sicuramente è un asset
+      // del sito vero (caso origin SU). Prova il proxy; se anche quello
+      // fallisce, ritorna il 404 originale invece di fallback.html.
+      const proxied = await proxyToOrigin(request, env);
+      return proxied !== null ? proxied : assetResponse;
     }
+
+    const proxied = await proxyToOrigin(request, env);
+    if (proxied !== null) {
+      return proxied;
+    }
+    return fallbackResponse(env, request);
+  },
+};
+
+/**
+ * Prova a contattare l'origin. Ritorna la Response da inviare al client,
+ * oppure null se l'origin è irraggiungibile / dà errore di gateway
+ * (e quindi il chiamante deve usare il fallback).
+ * Per i path asset, null significa "né ASSETS né origin ce l'hanno":
+ * il chiamante deve rispondere 404, non la pagina offline.
+ */
+async function proxyToOrigin(request, env) {
 
     const originHostname = env.ORIGIN_HOSTNAME;
     const originHostHeader = env.ORIGIN_HOST_HEADER || originHostname;
@@ -144,7 +176,7 @@ export default {
       clearTimeout(timeoutId);
 
       if (FAILOVER_STATUS_CODES.has(originResponse.status)) {
-        return fallbackResponse(env, request);
+        return null;
       }
 
       // Rispondiamo con il body/headers dell'origin così come sono,
@@ -158,10 +190,9 @@ export default {
     } catch (err) {
       clearTimeout(timeoutId);
       // Copre: timeout (AbortError), DNS/connessione fallita, TLS error, ecc.
-      return fallbackResponse(env, request);
+      return null;
     }
-  },
-};
+}
 
 
 // Serve la pagina di fallback statica (build Next.js, cartella fallback-app/out,

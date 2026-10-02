@@ -40,7 +40,7 @@ export default function LoadingProvider({ children }: { children: React.ReactNod
           }}
         >
           <div className={fading ? "" : "animate-pulse"}>
-            <img src="https://img.nloreee.it/u/Memoji-NoBG" className="w-32 h-32" alt="" />
+            <img src="/failover/memoji-nobg.png" className="w-32 h-32" alt="" />
           </div>
           <p
             className="mt-6 font-mono text-xs uppercase tracking-[0.3em]"

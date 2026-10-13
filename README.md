@@ -1,159 +1,115 @@
 # nloreee-failover
 
-Reverse proxy e failover per **nloreee.it**, costruito su Cloudflare Workers.
+Reverse proxy and failover for nloreee.it, built on Cloudflare Workers.
 
-Il Worker fa da proxy verso l'origin reale (Pangolin/Traefik sulla VPS). Quando
-l'origin non è raggiungibile — spento, in timeout, o che risponde con un errore di
-gateway — il visitatore non vede una pagina di errore di Cloudflare o del browser,
-ma una **pagina "OFFLINE"** costruita con Next.js e servita come asset statico
-dallo stesso Worker.
+The Worker acts as a proxy to the actual origin (Pangolin/Traefik running on the VPS). When the origin becomes unreachable — due to downtime, a timeout, or a gateway error — visitors see an "OFFLINE" page built with Next.js and served as a static asset by the same Worker, instead of a Cloudflare or browser error page.
 
-```
-utente ──► nloreee.it (Cloudflare) ──► Worker
+```text
+user ──► nloreee.it (Cloudflare) ──► Worker
                                      │
                     ┌────────────────┴────────────────┐
                     │                                 │
-              origin OK                    origin KO / timeout
+               origin OK                    origin DOWN / timeout
                     │                                 │
-          risposta del sito            pagina "OFFLINE" (503, no-store)
-          (body + status originali)
+           website response                  "OFFLINE" page (503, no-store)
+           (original body + status)
 ```
 
-## Come funziona
+## How it works
 
-1. Ogni richiesta che arriva a `nloreee.it` passa dal Worker
-   (`run_worker_first = true`, vedi [`wrangler.toml`](wrangler.toml)).
-2. Il Worker ricostruisce l'URL verso `ORIGIN_HOSTNAME`, inoltra metodo, body e
-   header, e normalizza `Host` / `X-Forwarded-*` per Traefik.
-3. Se `fetch()` verso l'origin va a timeout, lancia un'eccezione o restituisce un
-   **codice di stato di failover**, il Worker risponde con la pagina offline.
-4. Altrimenti restituisce la risposta dell'origin così com'è, senza cache
-   aggressiva e senza alterare body o status.
+1. Every request to `nloreee.it` passes through the Worker (`run_worker_first = true`, see [`wrangler.toml`](wrangler.toml)).
+2. The Worker reconstructs the URL using `ORIGIN_HOSTNAME`, forwards the method, body, and headers, and normalizes `Host` / `X-Forwarded-*` headers for Traefik.
+3. If `fetch()` to the origin times out, throws an exception, or returns a failover status code, the Worker responds with the offline page.
+4. Otherwise, it returns the origin response unchanged, without aggressive caching or modifying the body or status code.
 
-### Quando scatta il failover
+### When failover is triggered
 
-| Situazione | Esito |
+| Situation | Result |
 | --- | --- |
-| Timeout oltre `ORIGIN_TIMEOUT_MS` | pagina offline |
-| Errore di rete / DNS / TLS | pagina offline |
-| Loop di redirect (`ERR_TOO_MANY_REDIRECTS`) | pagina offline |
-| `502`, `503`, `504` (errori gateway) | pagina offline |
-| `521`, `522`, `523`, `524`, `525`, `526`, `530` (errori generati da Cloudflare quando l'origin è a sua volta proxato) | pagina offline |
-| `404`, `410`, `4xx`, `5xx` applicativi | **mostrati così come sono** |
+| Timeout exceeding `ORIGIN_TIMEOUT_MS` | Offline page |
+| Network / DNS / TLS error | Offline page |
+| Redirect loop (`ERR_TOO_MANY_REDIRECTS`) | Offline page |
+| `502`, `503`, `504` (gateway errors) | Offline page |
+| `521`, `522`, `523`, `524`, `525`, `526`, `530` (Cloudflare errors generated when the origin is itself proxied) | Offline page |
+| Application-level `404`, `410`, `4xx`, `5xx` responses | Displayed unchanged |
 
-Gli ultimi due casi sono una scelta deliberata: un 404 o un 500 applicativo sono
-risposte "vere" del sito e nasconderle dietro la pagina offline renderebbe più
-difficile capire cosa è rotto.
+The last two cases are intentional: an application-level `404` or `500` is a genuine website response. Hiding it behind the offline page would make it harder to identify what is broken.
 
-Gli `5xx` di Cloudflare vanno intercettati esplicitamente perché `fetch()` **non**
-lancia un'eccezione in quel caso: restituisce una `Response` "completata" con la
-pagina di errore HTML di Cloudflare come body.
+Cloudflare `5xx` errors must be handled explicitly because `fetch()` does not throw an exception in these cases. Instead, it returns a completed `Response` containing Cloudflare's HTML error page in the response body.
 
-## Struttura del repository
+## Repository structure
 
-```
+```text
 .
-├── worker.js                 # reverse proxy + logica di failover
-├── wrangler.toml             # config del Worker e binding degli asset
-├── package.json              # script di sviluppo e deploy
-└── fallback-app/             # app Next.js della pagina offline
+├── worker.js                 # Reverse proxy + failover logic
+├── wrangler.toml             # Worker configuration and asset bindings
+├── package.json              # Development and deployment scripts
+└── fallback-app/             # Next.js app for the offline page
     ├── app/
-    │   ├── fallback/         # route /fallback -> fallback.html
-    │   ├── components/       # header, footer, tema, suoni, testo animato
+    │   ├── fallback/         # /fallback route -> fallback.html
+    │   ├── components/       # Header, footer, theme, sounds, animated text
     │   ├── hooks/            # useSounds
-    │   ├── globals.css       # token di colore light/dark
+    │   ├── globals.css       # Light/dark color tokens
     │   └── layout.tsx
-    ├── public/failover/      # asset serviti come /failover/*
-    └── next.config.ts        # output: "export" (build statica)
+    ├── public/failover/       # Assets served under /failover/*
+    └── next.config.ts        # output: "export" (static build)
 ```
 
-La pagina offline viene buildata con `output: "export"` in `fallback-app/out/`,
-che è la cartella esposta dal binding `ASSETS`.
+The offline page is built using `output: "export"` into `fallback-app/out/`, the directory exposed through the `ASSETS` binding.
 
-## Configurazione
+## Configuration
 
-Le variabili si impostano da **Cloudflare Dashboard → Worker → Settings →
-Variables and Secrets**, oppure in locale in `.dev.vars` (vedi
-[`.dev.vars.example`](.dev.vars.example)).
+Variables can be configured in Cloudflare Dashboard → Worker → Settings → Variables and Secrets, or locally in `.dev.vars` (see [`.dev.vars.example`](.dev.vars.example)).
 
-| Variabile | Obbligatoria | Default | Descrizione |
+| Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `ORIGIN_HOSTNAME` | **sì** | — | Hostname reale della VPS/Pangolin contattato da `fetch()`. **Deve essere diverso da `nloreee.it`**, altrimenti il Worker richiama se stesso e si mette in loop. |
-| `ORIGIN_HOST_HEADER` | no | `ORIGIN_HOSTNAME` | Valore dell'header `Host` da inviare a Traefik, perché instradi la richiesta verso il router giusto. Nella maggior parte dei setup Pangolin coincide con l'hostname pubblico originale. |
-| `ORIGIN_TIMEOUT_MS` | no | `5000` | Timeout in ms prima di considerare l'origin irraggiungibile. |
+| `ORIGIN_HOSTNAME` | Yes | — | The actual VPS/Pangolin hostname contacted by `fetch()`. It must be different from `nloreee.it`; otherwise, the Worker will call itself and enter a loop. |
+| `ORIGIN_HOST_HEADER` | No | `ORIGIN_HOSTNAME` | The value of the `Host` header sent to Traefik to route the request to the correct router. In most Pangolin setups, this matches the original public hostname. |
+| `ORIGIN_TIMEOUT_MS` | No | `5000` | Timeout in milliseconds before the origin is considered unreachable. |
 
-Nessun secret è necessario: non ci sono credenziali da inoltrare all'origin. Se in
-futuro serve un token (es. un header di autenticazione Pangolin), va aggiunto come
-**Secret** e letto da `env`, mai hardcoded nel codice.
+No secrets are required: no credentials are forwarded to the origin. If a token is needed in the future (e.g., a Pangolin authentication header), it should be added as a Secret and read from `env`, never hardcoded into the source code.
 
-## Sviluppo
+## Development
 
 ```bash
 npm install                 # wrangler
-npm run fallback:install    # dipendenze di fallback-app
-npm run dev                 # build della pagina offline + wrangler dev
+npm run fallback:install    # fallback-app dependencies
+npm run dev                 # Build the offline page + start wrangler dev
 ```
 
-`npm run dev` compila `fallback-app` e poi avvia `wrangler dev` con l'origin
-locale: senza `ORIGIN_HOSTNAME` impostata il Worker risponde 500 con un messaggio
-esplicito, con l'origin configurata si può provare il failover puntandola a un
-hostname irraggiungibile.
+`npm run dev` builds `fallback-app` and then starts `wrangler dev` with a local origin. If `ORIGIN_HOSTNAME` is not set, the Worker returns a `500` response with an explicit error message. Once the origin is configured, you can test failover by pointing it to an unreachable hostname.
 
-Per lavorare solo sulla pagina offline, con hot reload:
+To work exclusively on the offline page with hot reload:
 
 ```bash
 npm run fallback:dev        # http://localhost:3000/fallback
 ```
 
-> `fallback-app` si sviluppa con **bun** (`packageManager` in `package.json`,
-> `bun.lock` versionato), ma gli script del root usano `npm`: sono quelli che gira
-> Workers Builds, dove il `packageManager` del progetto non viene onorato. Per questo
-> `fallback-app/package-lock.json` è in `.gitignore` e la sorgente di verità resta
-> `bun.lock`.
+> `fallback-app` uses Bun for development (`packageManager` in `package.json`, with `bun.lock` committed to the repository). However, the root scripts use `npm`, as this is what Workers Builds runs; the project's `packageManager` setting is not honored there. For this reason, `fallback-app/package-lock.json` is included in `.gitignore`, and `bun.lock` remains the source of truth.
 
-## Deploy
+## Deployment
 
 ```bash
-npm run deploy              # build della pagina offline + wrangler deploy
+npm run deploy              # Build the offline page + deploy with Wrangler
 ```
 
-In alternativa, con **Cloudflare Workers Builds** (build automatico a ogni push):
+Alternatively, use Cloudflare Workers Builds for automatic deployment on every push:
 
-| Campo | Valore |
+| Field | Value |
 | --- | --- |
 | Build command | `npm run fallback:build` |
 | Deploy command | `npx wrangler deploy` |
 | Root directory | `/` |
 
-`fallback:build` installa da sé le dipendenze di `fallback-app` prima di compilare:
-`npm install` al root da solo **non** basta, perché `fallback-app` non è un workspace
-e senza le sue dipendenze `next build` fallisce con `sh: 1: next: not found`.
+`fallback:build` installs the `fallback-app` dependencies before building. Running `npm install` at the repository root alone is not sufficient, because `fallback-app` is not a workspace and `next build` will fail with `sh: 1: next: not found` if its dependencies are missing.
 
-Le variabili si possono dichiarare anche nel pannello Builds. `keep_vars = true` in
-[`wrangler.toml`](wrangler.toml) serve a non farle cancellare dai deploy.
+Variables can also be configured in the Builds settings. `keep_vars = true` in [`wrangler.toml`](wrangler.toml) prevents them from being removed during deployments.
 
-## Dettagli da conoscere
+## Important details
 
-- **`run_worker_first = true`** è essenziale: senza, Cloudflare serve gli asset
-  direttamente per i path che coincidono e il Worker viene bypassato.
-- **Gli asset non vengono mai prossati.** I path `/_next/` (chunk JS/CSS di Next.js)
-  e `/failover/` (file in `fallback-app/public/failover/`) sono serviti sempre da
-  `ASSETS`. Se fossero prossati, con la VPS giù ogni richiesta andrebbe in timeout
-  e verrebbe sostituita dalla pagina offline invece che dal file reale: si
-  romperebbe l'hydration (il pulsante "Retry" smetterebbe di rispondere) e le
-  immagini.
-- **`redirect: "follow"`** lascia risolvere i redirect dell'origin al Worker
-  invece di rilanciarli al browser. Un redirect legittimo si risolve in modo
-  trasparente; un loop (es. Pangolin che, a risorsa disattivata, redirige verso lo
-  stesso host pubblico) fa scattare il limite di redirect del runtime, che viene
-  trasformato in pagina offline invece di arrivare al browser come
-  `ERR_TOO_MANY_REDIRECTS`.
-- **La pagina offline non viene mai cachata** (`Cache-Control: no-store`),
-  altrimenti continuerebbe a essere mostrata anche dopo il ritorno online della VPS.
-- **Il reload automatico usa il `503` come segnale** (`useAutoReload`): la pagina
-  riprova `window.location.href` ogni 5s, con backoff a 30s, e ricarica quando la
-  risposta non è più un `503`. Il `503` è un contratto affidabile perché il Worker
-  lo restituisce **solo** per la pagina di fallback: qualunque `503` dell'origin
-  verrebbe comunque convertito in fallback. Ogni probe è una richiesta in più verso
-  l'origin (con la VPS giù costa un `ORIGIN_TIMEOUT_MS` ciascuna), quindi i probe
-  vengono saltati con la tab in background e ripresi subito quando torna visibile.
+- **`run_worker_first = true` is essential.** Without it, Cloudflare serves matching static assets directly, bypassing the Worker.
+- **Static assets are never proxied.** The `/_next/` paths (Next.js JS/CSS chunks) and `/failover/` paths (files in `fallback-app/public/failover/`) are always served through `ASSETS`. If they were proxied, every request would time out while the VPS was down and be replaced by the offline page instead of the actual file. This would break hydration (the "Retry" button would stop responding) and images would fail to load.
+- **`redirect: "follow"` allows the Worker to follow redirects from the origin** instead of forwarding them to the browser. Legitimate redirects are resolved transparently. A redirect loop (e.g., Pangolin redirecting to the same public host when a resource is disabled) triggers the runtime's redirect limit, which is converted into the offline page instead of reaching the browser as `ERR_TOO_MANY_REDIRECTS`.
+- **The offline page is never cached** (`Cache-Control: no-store`), preventing it from remaining visible after the VPS comes back online.
+- **Automatic reloading uses `503` as a signal** (`useAutoReload`). The page retries `window.location.href` every 5 seconds, increasing the interval up to 30 seconds, and reloads when the response is no longer a `503`. The `503` status is a reliable signal because the Worker only returns it for the fallback page: any `503` returned by the origin is converted into the fallback page as well.
+- Each probe generates an additional request to the origin (when the VPS is down, each one costs `ORIGIN_TIMEOUT_MS`). Therefore, probes are paused while the tab is in the background and resume as soon as it becomes visible again.

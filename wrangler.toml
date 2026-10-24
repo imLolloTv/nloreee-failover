@@ -12,3 +12,17 @@ binding = "ASSETS"
 # proxy/failover). Senza questo, Cloudflare servirebbe gli asset direttamente
 # per i path che coincidono, bypassando il Worker.
 run_worker_first = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
+[observability.issue_detection]
+enabled = true

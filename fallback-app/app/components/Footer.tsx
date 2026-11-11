@@ -44,7 +44,7 @@ export default function Footer() {
 
           <div className="space-y-1">
             <span className="text-[10px] text-muted font-semibold uppercase block">HEALTHCHECK</span>
-            <p className="text-fg font-medium">HTTP 503 · RETRY ACTIVE</p>
+            <p className="text-fg font-medium">HTTP 503 // RETRY ACTIVE</p>
             <p className="text-[11px] text-muted">Automatic background probe</p>
           </div>
 

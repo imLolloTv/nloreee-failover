@@ -16,9 +16,9 @@ export default function ThemeToggle() {
         toggle();
       }}
       onMouseEnter={playHover}
-      aria-label="Toggle theme"
+      aria-label="Toggle color theme"
       title="Toggle theme"
-      className="flex h-9 w-9 items-center justify-center rounded-xs border border-line bg-surface text-muted transition-colors hover:text-fg hover:border-line-strong cursor-pointer"
+      className="relative flex h-9 w-9 sm:h-8 sm:w-8 min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-line bg-surface text-muted transition-all cursor-pointer hover:border-fg hover:text-fg"
     >
       <svg
         viewBox="0 0 24 24"

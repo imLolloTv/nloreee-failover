@@ -61,7 +61,7 @@ export default function Fallback() {
             </div>
 
             {/* Hardware Telemetry Apparatus Rack */}
-            <div className="border border-line bg-surface/90 rounded-xs p-5 sm:p-6 text-left space-y-4 font-mono text-xs shadow-xs">
+            <div className="geo-cross geo-cross-tl geo-cross-br border border-line bg-surface rounded-xs p-5 sm:p-6 text-left space-y-4 font-mono text-xs shadow-xs">
               <div className="flex items-center justify-between pb-3 border-b border-line text-[11px] text-muted">
                 <span className="flex items-center gap-2">
                   <ShieldAlert className="w-3.5 h-3.5 text-warn" />
@@ -71,7 +71,7 @@ export default function Fallback() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-surface-2/60 rounded-xs border border-line space-y-1">
+                <div className="p-3 bg-surface-2 rounded-xs border border-line space-y-1">
                   <span className="text-[10px] text-muted uppercase block">UPSTREAM STATUS</span>
                   <div className="flex items-center gap-2 text-warn font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-warn animate-pulse" />
@@ -79,7 +79,7 @@ export default function Fallback() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-surface-2/60 rounded-xs border border-line space-y-1">
+                <div className="p-3 bg-surface-2 rounded-xs border border-line space-y-1">
                   <span className="text-[10px] text-muted uppercase block">EDGE DISPATCH</span>
                   <div className="flex items-center gap-2 text-ok font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-ok" />
@@ -98,32 +98,36 @@ export default function Fallback() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleRetry}
-                onMouseEnter={playHover}
-                disabled={retrying}
-                className="btn-tactile font-mono text-xs uppercase flex items-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${retrying ? "animate-spin" : ""}`} />
-                <span>{retrying ? "RECONNECTING..." : "RECONNECT TO NODE"}</span>
-                <kbd className="hidden sm:inline text-[10px] px-1 py-0.2 bg-surface border border-line rounded text-muted font-mono">
-                  R
-                </kbd>
-              </button>
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  onMouseEnter={playHover}
+                  disabled={retrying}
+                  className="btn-tactile font-mono text-xs uppercase flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${retrying ? "animate-spin" : ""}`} />
+                  <span>{retrying ? "RECONNECTING..." : "RECONNECT TO NODE"}</span>
+                </button>
 
-              <a
-                href="https://discord.com/users/623496189056253953"
-                target="_blank"
-                rel="noopener noreferrer"
-                onMouseEnter={playHover}
-                onClick={playClick}
-                className="btn-ghost font-mono text-xs uppercase flex items-center gap-1.5"
-              >
-                <span>Discord Comms</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+                <a
+                  href="https://discord.com/users/623496189056253953"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onMouseEnter={playHover}
+                  onClick={playClick}
+                  className="btn-ghost font-mono text-xs uppercase flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Discord Comms</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              {/* Keyboard Shortcut Hint */}
+              <p className="font-mono text-[11px] text-muted tracking-wider">
+                PRESS <kbd className="px-1.5 py-0.5 rounded-xs border border-line bg-surface-2 text-fg font-medium">R</kbd> FOR INSTANT RECONNECT
+              </p>
             </div>
 
           </div>

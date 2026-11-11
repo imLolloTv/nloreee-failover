@@ -4,62 +4,148 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #F9F9FB;
-  --foreground: #000000;
+  --bg: #F4F4F6;
+  --surface: #FFFFFF;
+  --surface-2: #EAEBED;
+  --surface-3: #DFE1E6;
+  --fg: #0D0E12;
+  --muted: #494C56;
+  --line: #E1E2E6;
+  --line-strong: #C4C6CD;
+  --accent: #0D0E12;
+  --accent-volt: #0055FF;
+  --danger: #DC2626;
+  --ok: #10B981;
+  --warn: #CA8A04;
 
-  --loading-bg: #F9F9FB;
-  --loading-text: #8E8E93;
+  --background: var(--bg);
+  --foreground: var(--fg);
+
+  --loading-bg: #F4F4F6;
+  --loading-text: #8E92A2;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark {
-  --background: #121212;
-  --foreground: #ededed;
+  --bg: #0B0C0E;
+  --surface: #121316;
+  --surface-2: #191B20;
+  --surface-3: #22252C;
+  --fg: #F4F5F8;
+  --muted: #8E92A2;
+  --line: #1F2128;
+  --line-strong: #323541;
+  --accent: #F4F5F8;
+  --accent-volt: #00F0FF;
+  --danger: #F87171;
+  --ok: #34D399;
+  --warn: #FACC15;
 
-  --loading-bg: #121212;
-  --loading-text: #8E8E93;
-
-  --color-black: #f4f4f5;
-  --color-white: #252525;
-
-  --color-gray-50: #18181b;
-  --color-gray-100: #1f1f23;
-  --color-gray-200: #2D2D30;
-  --color-gray-300: #3f3f46;
-  --color-gray-400: #52525b;
-  --color-gray-500: #a1a1aa;
-  --color-gray-600: #d4d4d8;
-  --color-gray-700: #e4e4e7;
-  --color-gray-800: #f4f4f5;
-  --color-gray-900: #fafafa;
-
-  --color-red-600: #f87171;
-  --color-green-600: #4ade80;
-  --color-yellow-500: #facc15;
-}
-
-.dark .border-black {
-  border-color: var(--color-white)!important;
-}
-
-.theme-transitioning,
-.theme-transitioning *,
-.theme-transitioning *::before,
-.theme-transitioning *::after {
-  transition:
-    background-color 300ms ease,
-    color 300ms ease,
-    border-color 300ms ease;
+  --loading-bg: #0B0C0E;
+  --loading-text: #8E92A2;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Swiss Architectural Blueprint Dot Matrix Canvas */
+.blueprint-grid {
+  background-image: radial-gradient(var(--line-strong) 0.8px, transparent 0.8px);
+  background-size: 28px 28px;
+  background-position: -14px -14px;
+}
+
+@media (max-width: 640px) {
+  .blueprint-grid {
+    background-size: 16px 16px;
+    background-position: -8px -8px;
+  }
+}
+
+.btn-tactile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--fg);
+  color: var(--bg);
+  border: 1px solid var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.625rem 1.125rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out), border-color 140ms var(--ease-out), color 140ms var(--ease-out);
+  white-space: nowrap;
+  user-select: none;
+}
+.btn-tactile:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-tactile:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 140ms var(--ease-out), border-color 140ms var(--ease-out), color 140ms var(--ease-out);
+  white-space: nowrap;
+  user-select: none;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--fg);
+}
+
+.tech-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
 }

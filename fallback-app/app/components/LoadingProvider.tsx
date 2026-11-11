@@ -2,21 +2,30 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-const DISPLAY_MS = 1200;
-
-const LoadingContext = createContext(true);
+const LoadingContext = createContext(false);
 
 export function useLoading() {
   return useContext(LoadingContext);
 }
 
 export default function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [fading, setFading] = useState(false);
-  const [gone, setGone] = useState(false);
+  const [gone, setGone] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setFading(true), DISPLAY_MS);
+    try {
+      if (sessionStorage.getItem("failover_has_loaded")) {
+        setGone(true);
+        return;
+      }
+      sessionStorage.setItem("failover_has_loaded", "1");
+    } catch {}
+
+    setLoading(true);
+    setGone(false);
+
+    const t = setTimeout(() => setFading(true), 300);
     return () => clearTimeout(t);
   }, []);
 
@@ -25,12 +34,12 @@ export default function LoadingProvider({ children }: { children: React.ReactNod
       {children}
       {!gone && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center select-none"
           style={{
             backgroundColor: "var(--loading-bg)",
             opacity: fading ? 0 : 1,
             pointerEvents: fading ? "none" : "auto",
-            transition: "opacity 0.4s ease-out",
+            transition: "opacity 0.25s var(--ease-out)",
           }}
           onTransitionEnd={() => {
             if (fading) {
@@ -40,13 +49,14 @@ export default function LoadingProvider({ children }: { children: React.ReactNod
           }}
         >
           <div className={fading ? "" : "animate-pulse"}>
-            <img src="/failover/memoji-nobg.png" className="w-32 h-32" alt="" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/failover/memoji-nobg.png" className="w-24 h-24" alt="" />
           </div>
           <p
-            className="mt-6 font-mono text-xs uppercase tracking-[0.3em]"
+            className="mt-4 font-mono text-[11px] uppercase tracking-[0.25em]"
             style={{ color: "var(--loading-text)" }}
           >
-            LOADING ...
+            SYS_FAILOVER ...
           </p>
         </div>
       )}

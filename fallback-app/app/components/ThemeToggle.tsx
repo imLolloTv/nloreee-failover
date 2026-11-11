@@ -11,11 +11,14 @@ export default function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => { playClick(); toggle(); }}
+      onClick={() => {
+        playClick();
+        toggle();
+      }}
       onMouseEnter={playHover}
       aria-label="Toggle theme"
       title="Toggle theme"
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:text-black cursor-pointer"
+      className="flex h-9 w-9 items-center justify-center rounded-xs border border-line bg-surface text-muted transition-colors hover:text-fg hover:border-line-strong cursor-pointer"
     >
       <svg
         viewBox="0 0 24 24"

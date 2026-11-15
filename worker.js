@@ -162,18 +162,16 @@ async function proxyToOrigin(request, env) {
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
+      const hasBody = !["GET", "HEAD"].includes(request.method);
+      const requestBody = hasBody ? await request.arrayBuffer() : undefined;
+      if (hasBody) {
+        proxyHeaders.delete("content-length");
+      }
+
       const originRequestInit = {
         method: request.method,
         headers: proxyHeaders,
-        // GET/HEAD non possono avere body; per gli altri metodi inoltriamo lo stream.
-        body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
-        // "follow" (default): i redirect dell'origin vengono risolti dal Worker stesso,
-        // non rilanciati al browser. Un redirect legittimo (poche redirezioni) si risolve
-        // in modo trasparente e il client riceve direttamente il contenuto finale.
-        // Un loop infinito (es. Pangolin che, a risorsa disattivata, redirige verso lo
-        // stesso host pubblico nloreee.it) fa scattare il limite interno di redirect del
-        // runtime: fetch() lancia un'eccezione, che viene intercettata sotto e trasformata
-        // in pagina di fallback, invece di propagarsi al browser come ERR_TOO_MANY_REDIRECTS.
+        body: requestBody && requestBody.byteLength > 0 ? requestBody : hasBody ? "" : undefined,
         redirect: "follow",
         signal: controller.signal,
       };

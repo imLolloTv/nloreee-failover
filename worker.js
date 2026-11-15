@@ -71,6 +71,12 @@ const FALLBACK_ASSET_PREFIXES = ["/_next/", "/failover/"];
 export default {
   async fetch(request, env, ctx) {
     const incomingUrlForAssets = new URL(request.url);
+
+    // Anteprima del failover sempre accessibile su /failover anche quando l'origin è online
+    if (incomingUrlForAssets.pathname === "/failover" || incomingUrlForAssets.pathname === "/failover/") {
+      return fallbackResponse(env, request, 200);
+    }
+
     const isAssetPath = FALLBACK_ASSET_PREFIXES.some((p) =>
       incomingUrlForAssets.pathname.startsWith(p)
     );
@@ -198,8 +204,8 @@ async function proxyToOrigin(request, env) {
 // Serve la pagina di fallback statica (build Next.js, cartella fallback-app/out,
 // esposta tramite l'Assets binding "ASSETS" configurato in wrangler.toml) invece
 // di un HTML inline. Forziamo path e status: qualunque sia l'URL originale
-// richiesto, il fallback risponde sempre con /fallback.html e status 503.
-async function fallbackResponse(env, request) {
+// richiesto, il fallback risponde sempre con /fallback.html e status 503 (o 200 in preview).
+async function fallbackResponse(env, request, status = 503) {
   const assetUrl = new URL(request.url);
   assetUrl.pathname = "/fallback.html";
   assetUrl.search = "";
@@ -213,7 +219,7 @@ async function fallbackResponse(env, request) {
   headers.set("Cache-Control", "no-store");
 
   return new Response(assetResponse.body, {
-    status: 503,
+    status,
     headers,
   });
 }

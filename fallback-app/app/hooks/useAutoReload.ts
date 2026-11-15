@@ -9,6 +9,11 @@ const FAILOVER_STATUS = 503;
 
 export function useAutoReload() {
   useEffect(() => {
+    // Non ricaricare automaticamente se si sta guardando l'anteprima su /failover
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/failover")) {
+      return;
+    }
+
     let timer: ReturnType<typeof setTimeout>;
     let controller: AbortController | null = null;
     let interval = INITIAL_INTERVAL_MS;

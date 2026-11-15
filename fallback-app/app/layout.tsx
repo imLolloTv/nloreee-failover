@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
-import LoadingProvider from "@/app/components/LoadingProvider";
-import ThemeProvider from "@/app/components/ThemeProvider";
+import { Geist, Geist_Mono, VT323, Silkscreen } from "next/font/google";
+import SpaceSky from "@/app/components/SpaceSky";
 import "./globals.css";
-
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})();`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,27 +13,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const vt323 = VT323({
+  variable: "--font-vt323",
+  subsets: ["latin"],
+  weight: "400",
+});
+
+const silkscreen = Silkscreen({
+  variable: "--font-silkscreen",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "nloreee.it",
-  description: "Personal website of Lollo. Open-source projects, Docker, self-hosting, homelab, automation with n8n, and useful tools I'm building.",
+  title: "nloreee.it — Orbital Failover",
+  description: "Personal website of Lollo. Currently offline or unreachable.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${silkscreen.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
-      <body className="min-h-full">
-        <LoadingProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
-        </LoadingProvider>
+      <body className="min-h-full bg-[#04050d] text-[#e8eaff]">
+        <SpaceSky />
+        {children}
       </body>
     </html>
   );
